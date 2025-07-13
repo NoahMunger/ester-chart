@@ -1,4 +1,64 @@
-numpy
-matplotlib
+import numpy as np
+import matplotlib.pyplot as plt
 
-add requirements
+# ----- Parameters -----
+# Half-lives (days)
+half_lives = {
+    'Propionate': 2.0,
+    'Phenylpropionate': 4.5,
+    'Isocaproate': 7.0,
+    'Decanoate': 15.0,
+    'Cypionate': 8.0
+}
+
+# Doses per injection (mg)
+doses = {
+    'Propionate':  30,
+    'Phenylpropionate': 60,
+    'Isocaproate': 60,
+    'Decanoate':   100,
+    'Cypionate':   125
+}
+
+n_inj = 16         # total injections
+interval = 3       # days between injections
+times = np.arange(n_inj) * interval  # [0,3,6,...,45]
+
+# Precompute elimination constants
+k = {e: np.log(2) / t for e, t in half_lives.items()}
+
+# ----- Simulation: peak concentrations -----
+peaks = {e: [] for e in half_lives}
+levels = {e: 0.0 for e in half_lives}
+
+for inj in range(n_inj):
+    # decay from previous injection
+    for ester in levels:
+        levels[ester] *= np.exp(-k[ester] * interval)
+    # add new dose and record peak
+    for ester in levels:
+        levels[ester] += doses[ester]
+        peaks[ester].append(levels[ester])
+
+# ----- Plotting -----
+plt.figure(figsize=(10,6))
+
+markers = {
+    'Propionate': 'o-',
+    'Phenylpropionate': 's-',
+    'Isocaproate': '^-',
+    'Decanoate': 'd-',
+    'Cypionate': 'x--'
+}
+
+for ester, style in markers.items():
+    plt.plot(times, peaks[ester], style, label=ester)
+
+plt.title('Peak Concentrations: Sustanon Esters vs. Cypionate (E3D Dosing)')
+plt.xlabel('Days since first injection')
+plt.ylabel('Concentration (mg)')
+plt.xticks(times)
+plt.grid(alpha=0.3)
+plt.legend()
+plt.tight_layout()
+plt.show()
